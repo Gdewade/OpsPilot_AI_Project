@@ -1,0 +1,17 @@
+{"title": "Payments API timing out", "logs": "ERROR Database connection timeout after 30s\nERROR too many connections for role payments\nERROR Database connection timeout after 30s", "expected": "database_connection_timeout.md"}
+{"title": "Orders service cannot log in to DB", "logs": "ERROR password authentication failed for user orders_app\nFATAL could not connect to database", "expected": "database_authentication_failure.md"}
+{"title": "Worker keeps dying", "logs": "ERROR worker exited unexpectedly\nFATAL Out of memory: Killed process 4412 (python)\nERROR container OOMKilled exit code 137", "expected": "high_memory_usage.md"}
+{"title": "Servers running hot", "logs": "WARNING CPU usage 97% for 10 minutes\nWARNING load average 24.5\nERROR request queue growing, CPU throttling detected", "expected": "high_cpu_usage.md"}
+{"title": "Cannot write uploads", "logs": "ERROR write failed: No space left on device\nERROR could not extend file, disk full on volume /data", "expected": "disk_space_full.md"}
+{"title": "Checkout returns 502", "logs": "ERROR 502 Bad Gateway from upstream\nERROR 503 Service Unavailable\nERROR 500 Internal Server Error on /checkout", "expected": "http_5xx_errors.md"}
+{"title": "Billing container restarting", "logs": "ERROR CrashLoopBackOff for pod billing-7d9\nERROR missing required environment variable BILLING_KEY\nERROR service exited with code 1 restart count 14", "expected": "service_crash_restart_loop.md"}
+{"title": "Search endpoint very slow", "logs": "WARNING p99 latency 8200ms on /search\nWARNING slow query took 7400ms\nWARNING response time degraded", "expected": "slow_api_response.md"}
+{"title": "Sessions failing, cache down", "logs": "ERROR Redis connection refused on 6379\nERROR MISCONF Redis is configured to save RDB snapshots\nWARNING cache miss rate 100%", "expected": "redis_connection_failure.md"}
+{"title": "Errors right after release", "logs": "ERROR health check failed after deployment v2.4.1\nERROR migration 0042 failed during rollout\nERROR new release unhealthy, rollback needed", "expected": "deployment_rollback.md"}
+{"title": "Users cannot sign in", "logs": "ERROR 401 invalid token\nERROR token expired signature verification failed\nWARNING many failed login attempts from same IP", "expected": "authentication_failures_api.md"}
+{"title": "DB pool exhausted", "logs": "ERROR FATAL: sorry, too many clients already\nERROR connection pool exhausted waiting for database connection", "expected": "database_connection_timeout.md"}
+{"title": "Container killed by kernel", "logs": "ERROR java.lang.OutOfMemoryError: Java heap space\nERROR OOMKilled", "expected": "high_memory_usage.md"}
+{"title": "Redis unreachable from API", "logs": "ERROR redis.exceptions.ConnectionError: Connection refused\nERROR cache lookup failed", "expected": "redis_connection_failure.md"}
+{"title": "Disk alerts on logging node", "logs": "ERROR disk usage 100% on /var/log\nERROR inode exhaustion, no space left on device", "expected": "disk_space_full.md"}
+{"title": "Unknown gibberish A", "logs": "ERROR xyzzy plugh frobnicate quux\nERROR zork blorb", "expected": null}
+{"title": "Unknown gibberish B", "logs": "ERROR wibble wobble flurble\nERROR snark grue bandersnatch", "expected": null}
