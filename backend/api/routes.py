@@ -16,6 +16,7 @@ from backend.schemas import (
     Severity,
     StatusUpdate,
 )
+from backend.services.approval_service import apply_decision_outcome
 from backend.services.investigation_service import run_investigation
 
 logger = logging.getLogger("opspilot.api")
@@ -180,6 +181,7 @@ def decide(approval_id: int, body: ApprovalDecision, ctx: AppContext = Depends(g
         body.reviewed_by,
         f"approval #{approval_id}: {body.comments or 'no comment'}",
     )
+    apply_decision_outcome(ctx.repo, ctx.cache, approval, body.decision.value, body.reviewed_by)
     return updated
 
 

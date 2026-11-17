@@ -70,3 +70,47 @@ def test_rate_limiter_blocks_after_limit_and_works_without_redis():
     cache = Cache("")
     assert [cache.allow("k", 2) for _ in range(3)] == [True, True, False]
     assert cache.allow("k", 0) is True  # 0 disables limiting
+
+
+# ---- what an approval decision does to the incident status -------------
+from backend.services.approval_service import apply_decision_outcome, status_after_decision  # noqa: E402
+
+
+def test_status_rules():
+    assert status_after_decision("investigating", "approved", 0) == "resolved"
+    assert status_after_decision("investigating", "approved", 1) is None  # another request still waiting
+    assert status_after_decision("investigating", "rejected", 0) == "needs_human"
+    for other in ("open", "resolved", "needs_human"):
+        assert status_after_decision(other, "approved", 0) is None
+        assert status_after_decision(other, "rejected", 0) is None
+
+
+def _investigated(repo, pipeline):
+    make_incident(repo)
+    return run_investigation(repo, Cache(), pipeline, 1, "tester")
+
+
+def test_approving_the_fix_resolves_the_incident_and_is_audited(repo, pipeline):
+    out = _investigated(repo, pipeline)
+    ap = repo.get_approval(out["approval_id"])
+    repo.decide_approval(ap["id"], "approved", "alice", "ok")
+    assert apply_decision_outcome(repo, Cache(), ap, "approved", "alice") == "resolved"
+    assert repo.get_incident(1)["status"] == "resolved"
+    assert "STATUS_CHANGED" in [a["action"] for a in repo.list_audit(1)]
+
+
+def test_rejecting_the_fix_sends_the_incident_to_a_human(repo, pipeline):
+    out = _investigated(repo, pipeline)
+    ap = repo.get_approval(out["approval_id"])
+    repo.decide_approval(ap["id"], "rejected", "alice", "not safe")
+    assert apply_decision_outcome(repo, Cache(), ap, "rejected", "alice") == "needs_human"
+    assert repo.get_incident(1)["status"] == "needs_human"
+
+
+def test_incident_stays_open_while_another_request_is_pending(repo, pipeline):
+    out = _investigated(repo, pipeline)
+    repo.create_approval(1, "second action", "bob")  # still pending
+    ap = repo.get_approval(out["approval_id"])
+    repo.decide_approval(ap["id"], "approved", "alice", None)
+    assert apply_decision_outcome(repo, Cache(), ap, "approved", "alice") is None
+    assert repo.get_incident(1)["status"] == "investigating"

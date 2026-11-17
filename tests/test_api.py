@@ -88,3 +88,15 @@ def test_investigation_rate_limit(settings):
     body = {"requested_by": "tester"}
     assert c.post(f"/incidents/{inc['id']}/investigate", json=body).status_code == 200
     assert c.post(f"/incidents/{inc['id']}/investigate", json=body).status_code == 429
+
+
+def test_approving_resolves_and_rejecting_escalates_via_api(client):
+    inc = new_incident(client)
+    out = client.post(f"/incidents/{inc['id']}/investigate", json={"requested_by": "tester"}).json()
+    client.post(f"/approvals/{out['approval_id']}/decision", json={"decision": "approved", "reviewed_by": "alice"})
+    assert client.get(f"/incidents/{inc['id']}").json()["status"] == "resolved"
+
+    inc2 = new_incident(client)
+    out2 = client.post(f"/incidents/{inc2['id']}/investigate", json={"requested_by": "tester"}).json()
+    client.post(f"/approvals/{out2['approval_id']}/decision", json={"decision": "rejected", "reviewed_by": "alice"})
+    assert client.get(f"/incidents/{inc2['id']}").json()["status"] == "needs_human"

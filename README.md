@@ -26,6 +26,8 @@ Streamlit UI ──► FastAPI ──► Investigation workflow (LangGraph)
   presents a guess as a conclusion.
 - **Human in the loop.** A verified fix opens an approval request. Nothing is executed
   automatically, and the requester cannot approve their own request. A request can be decided once.
+  Approving the fix marks the incident `resolved` (a person accepted it; OpsPilot does not run
+  anything), rejecting it sends the incident to `needs_human`. Both changes are audited.
 - **Hybrid retrieval.** Runbooks are chunked by markdown heading. BM25 and vector similarity are
   fused with Reciprocal Rank Fusion. Embeddings are cached on disk.
 - **Works offline.** Without an OpenAI key it uses hashing embeddings and a rule-based analyzer.
@@ -47,6 +49,12 @@ Try it: **Incidents → Report a new incident** (paste logs like
 `ERROR Database connection timeout after 30s`), then **Investigate → Run investigation**, then
 approve the proposed fix on **Approvals** (use a different name than the requester).
 
+Demo data (9 incidents, some resolved, some waiting for a human, some with pending approvals):
+
+```bash
+python scripts/seed_demo.py     # the app must be running; safe to run again
+```
+
 Without Docker:
 
 ```bash
@@ -55,6 +63,11 @@ pip install -r requirements-dev.txt
 STORAGE=memory uvicorn backend.main:app --reload     # no database needed (data lost on restart)
 streamlit run frontend/app.py                        # in a second terminal
 ```
+
+## Deploying
+
+`DEPLOY.md` is a step-by-step guide for a single AWS EC2 server using `docker-compose.prod.yml`
+(HTTPS and a password via Caddy; database, Redis and API are not exposed to the internet).
 
 ## Tests and evaluation
 

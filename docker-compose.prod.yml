@@ -1,0 +1,100 @@
+# Production stack for a single server (for example an AWS EC2 instance).
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Only Caddy is reachable from the internet (ports 80 and 443). The database,
+# Redis, API and dashboard live on the internal Docker network.
+# Caddy adds HTTPS and asks for a username and password before showing the UI.
+#
+# Required in .env (compose refuses to start if one is missing):
+#   POSTGRES_PASSWORD  API_KEY  SITE_ADDRESS  BASIC_AUTH_USER  BASIC_AUTH_HASH
+# See DEPLOY.md for how to create them.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opspilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: opspilot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opspilot -d opspilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      STORAGE: postgres
+      DATABASE_URL: postgresql://opspilot:${POSTGRES_PASSWORD}@db:5432/opspilot
+      REDIS_URL: redis://redis:6379/0
+      API_KEY: ${API_KEY:?set API_KEY in .env}
+    volumes:
+      - indexcache:/app/.cache
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build: .
+    restart: unless-stopped
+    command:
+      - streamlit
+      - run
+      - frontend/app.py
+      - --server.port=8501
+      - --server.address=0.0.0.0
+      - --server.headless=true
+    env_file: .env
+    environment:
+      API_URL: http://api:8000
+      API_KEY: ${API_KEY}
+    depends_on:
+      api:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?set BASIC_AUTH_USER in .env}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:?set BASIC_AUTH_HASH in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+
+volumes:
+  pgdata:
+  indexcache:
+  caddy_data:
+  caddy_config:

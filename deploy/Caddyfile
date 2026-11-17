@@ -1,0 +1,13 @@
+# Caddy gets a free HTTPS certificate automatically when SITE_ADDRESS is a
+# real host name (your own domain, or <ip-with-dashes>.sslip.io).
+# With SITE_ADDRESS=:80 it serves plain HTTP only (not recommended: the
+# password would travel unencrypted).
+
+{$SITE_ADDRESS} {
+	basic_auth {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+
+	encode gzip
+	reverse_proxy frontend:8501
+}
