@@ -64,11 +64,6 @@ STORAGE=memory uvicorn backend.main:app --reload     # no database needed (data 
 streamlit run frontend/app.py                        # in a second terminal
 ```
 
-## Deploying
-
-`DEPLOY.md` is a step-by-step guide for a single AWS EC2 server using `docker-compose.prod.yml`
-(HTTPS and a password via Caddy; database, Redis and API are not exposed to the internet).
-
 ## Tests and evaluation
 
 ```bash
